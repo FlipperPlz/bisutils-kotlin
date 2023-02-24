@@ -4,6 +4,8 @@ options {
     tokenVocab=BisParamLexer;
 }
 
+import BisPreProcParser;
+
 param_tree: (param_statement)* param_enumDeclaration? EOF;
 
 param_classDeclaration: KW_CLASS ABS_IDENTIFIER (
@@ -22,16 +24,22 @@ SYM_RIGHT_BRACE) SYM_SEMICOLON;
 param_enumValue: ABS_IDENTIFIER (OP_ASSIGN ABS_NUMBER)?;
 
 param_statement:
-    param_classDeclaration |
-    param_deleteStatement |
-    param_arrayOperation |
+    preproc_directive        |
+    param_classDeclaration   |
+    param_deleteStatement    |
+    param_arrayOperation     |
     param_parameterStatement |
-    param_evaluationStatement;
+    param_executeStatement;
 
-param_evaluationStatement: KW_EVALUATE SYM_LEFT_PARENTHESIS ABS_IDENTIFIER OP_ASSIGN param_expression SYM_RIGHT_PARENTHESIS SYM_SEMICOLON;
+param_executeStatement: ENTER_MACRO_MODE (
+    KW_EXECUTE param_expression
+) EXIT_EVALUATION_MODE SYM_SEMICOLON;
+
+param_evaluateExpression: ENTER_MACRO_MODE (
+    KW_EVALUATE ABS_IDENTIFIER //Maybe expressions can be evaluated??
+) EXIT_EVALUATION_MODE;
 
 param_expression: WHITESPACES ;//TODO
-
 
 param_parameterStatement: ABS_IDENTIFIER (
     (OP_ASSIGN param_literal) |
@@ -40,13 +48,19 @@ param_parameterStatement: ABS_IDENTIFIER (
 
 param_deleteStatement:
     KW_DELETE ABS_IDENTIFIER SYM_SEMICOLON;
-    
 
 param_arrayOperation:
-    ABS_IDENTIFIER SYM_SQUARE (OP_SUB_ASSIGN | OP_ADD_ASSIGN) param_literalArray SYM_SEMICOLON;
+    ABS_IDENTIFIER SYM_SQUARE (
+        (OP_SUB_ASSIGN | OP_ADD_ASSIGN)
+        param_literalArray
+    ) SYM_SEMICOLON;
 
+param_literal:
+    ABS_STRING |
+    ABS_NUMBER |
+    param_parameterReference | //@addonName or @"addonName"
+    param_evaluateExpression;
 
-param_literal: ABS_STRING | ABS_NUMBER | param_parameterReference;
 
 param_parameterReference: SYM_ASPERAND (ABS_IDENTIFIER | ABS_STRING);
 

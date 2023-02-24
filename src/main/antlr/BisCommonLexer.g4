@@ -11,6 +11,9 @@ BIS_SYM_RIGHT_BRACKET:     ']';
 BIS_SYM_LEFT_BRACE:        '{';
 BIS_SYM_RIGHT_BRACE:       '}';
 BIS_SYM_LEFT_PARENTHESIS:  '(';
+BIS_SYM_LESS_THAN:         '<';
+BIS_SYM_GREATER_THAN:      '>';
+
 BIS_SYM_RIGHT_PARENTHESIS: ')';
 BIS_SYM_SEMICOLON:         ';';
 BIS_SYM_COLON:             ':';

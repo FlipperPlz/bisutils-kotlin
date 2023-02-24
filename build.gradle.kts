@@ -62,13 +62,18 @@ tasks {
 
     clean {
         doLast {
-            projectDir.listFiles()?.forEach { file ->
-                if (file.isFile() && file.name.startsWith("bisutils-jvm") && (file.extension == "iml" || file.extension == "ipr" || file.extension == "iws")) {
-                    file.delete()
+            delete {
+                fileTree("src/main/antlr/").matching {
+                    include("*.tokens")
                 }
+
+                fileTree(projectDir).matching {
+                    include("**/bisutils-jvm*.ipr", "**/bisutils-jvm*.iml", "**/bisutils-jvm*.iws")
+                }
+
+                fileTree("src/main/gen")
+                fileTree("generated-src")
             }
-            file("src/main/gen").deleteRecursively()
-            file("generated-src").deleteRecursively()
         }
     }
 
