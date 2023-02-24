@@ -2,7 +2,7 @@ lexer grammar BisPreProcLexer;
 
 import BisCommonLexer;
 
-ENTER_DIRECTIVE_MODE:           OCTOTHORPE                        -> mode(DIRECTIVE_MODE);
+ENTER_DIRECTIVE_MODE:           BIS_NEWLINE OCTOTHORPE            -> mode(DIRECTIVE_MODE);
 ENTER_MACRO_MODE:               LINE                              -> mode(MACRO_MODE);
 
 DELIMITED_COMMENT:              '/*' .*? '*/'                     -> channel(HIDDEN);
@@ -32,12 +32,10 @@ mode DIRECTIVE_MODE;
     KW_ENDIF_DIRECTIVE:             'endif';
     KW_LINE_DIRECTIVE:              'line';
 
-    ABS_INCLUDE_PATH:               ABS_TAGGED_STRING | ABS_DOUBLE_QUOTED_STRING | ABS_DOUBLE_QUOTED_STRING;
-    ABS_TAGGED_STRING:              BIS_SYM_LESS_THAN .*? BIS_SYM_GREATER_THAN;
-    ABS_DOUBLE_QUOTED_STRING:       BIS_SYM_DOUBLE_QUOTE .*? BIS_SYM_DOUBLE_QUOTE;
-    ABS_SINGLE_QUOTED_STRING:       '\'' .*? '\'';
     ABS_IDENTIFIER:                 BIS_ABS_IDENTIFIER;
     ABS_DIGITS:                     BIS_DIGITS;
+    ABS_INCLUDE_PATH:               BIS_SYM_DOUBLE_QUOTE .*? BIS_SYM_DOUBLE_QUOTE |
+                                    BIS_SYM_LESS_THAN .*? BIS_SYM_GREATER_THAN;
 
 
 //    NEWLINE:                        '\\' BIS_NEWLINE              -> channel(HIDDEN);
