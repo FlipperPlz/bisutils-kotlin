@@ -6,7 +6,7 @@ options {
 
 import BisPreProcParser;
 
-param_tree: (param_statement)* param_enumDeclaration? EOF;
+param_tree: (param_statement)* param_enumDeclaration? EOF; //ENTRY POINT
 
 param_classDeclaration: KW_CLASS ABS_IDENTIFIER (
     SYM_SEMICOLON | (
@@ -24,22 +24,12 @@ SYM_RIGHT_BRACE) SYM_SEMICOLON;
 param_enumValue: ABS_IDENTIFIER (OP_ASSIGN ABS_NUMBER)?;
 
 param_statement:
-    preproc_directive        |
-    param_classDeclaration   |
-    param_deleteStatement    |
-    param_arrayOperation     |
-    param_parameterStatement |
-    param_executeStatement;
-
-param_executeStatement: ENTER_MACRO_MODE (
-    KW_EXECUTE param_expression
-) EXIT_EVALUATION_MODE SYM_SEMICOLON;
-
-param_evaluateExpression: ENTER_MACRO_MODE (
-    KW_EVALUATE ABS_IDENTIFIER //Maybe expressions can be evaluated??
-) EXIT_EVALUATION_MODE;
-
-param_expression: WHITESPACES ;//TODO
+    preproc_directive[false, true]          | /* inSourceDoc = false, inParamFile = true */
+    param_classDeclaration                  |
+    param_deleteStatement                   |
+    param_arrayOperation                    |
+    param_parameterStatement                |
+    preproc_execute_macro SYM_SEMICOLON     ;
 
 param_parameterStatement: ABS_IDENTIFIER (
     (OP_ASSIGN param_literal) |
@@ -56,15 +46,19 @@ param_arrayOperation:
     ) SYM_SEMICOLON;
 
 param_literal:
-    ABS_STRING |
-    ABS_NUMBER |
-    param_parameterReference | //@addonName or @"addonName"
-    param_evaluateExpression;
-
-
+    ABS_NUMBER               |
+    preproc_macro[true]      | /* inParamFile = true */
+    param_string             |
+    param_parameterReference ; //@addonName or @"addonName"
 param_parameterReference: SYM_ASPERAND (ABS_IDENTIFIER | ABS_STRING);
 
 param_literalArray:
     SYM_LEFT_BRACE
         ((param_literal | param_literalArray) (SYM_COMMA (param_literal | param_literalArray))*)?
     SYM_RIGHT_BRACE;
+
+
+param_string:
+    ABS_STRING |
+    BIS_WHITESPACE* ~('}' | ';')* BIS_WHITESPACE*;
+

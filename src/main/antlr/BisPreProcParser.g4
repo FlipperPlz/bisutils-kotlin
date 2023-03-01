@@ -4,20 +4,36 @@ options {
     tokenVocab=BisPreProcLexer;
 }
 
-preproc_macro: ENTER_MACRO_MODE (
-    KW_LINE_MACRO || KW_FILE_MACRO
-) EXIT_MACRO_MODE;
+//------------------------------------------------=ENTRY POINTS=--------------------------------------------------------
 
-preproc_directive: ENTER_DIRECTIVE_MODE (
-    preproc_include_directive |
-    preproc_line_directive | //TEST: SourceDocs only
+preproc_macro[boolean isParamFile]: ENTER_MACRO_MODE (
+    preproc_file_macro  ||
+    preproc_line_macro ||
+    preproc_evaluate_macro { isParamFile = true; } ||
+    preproc_execute_macro { isParamFile = true; }
+) ;
+
+preproc_directive[boolean isSourceDoc, boolean isParamFile]: ENTER_DIRECTIVE_MODE (
+    preproc_include_directive[isParamFile] |
+    preproc_line_directive {isSourceDoc=true;}| //TEST: SourceDocs only
     preproc_define_directive |
     preproc_undefine_directive |
     preproc_if_directive
 ) EXIT_DIRECTIVE_MODE;
+//---------------------------------------------------=MACROS=-----------------------------------------------------------
+preproc_file_macro: KW_FILE_MACRO EXIT_MACRO_MODE;
+
+preproc_line_macro: KW_LINE_MACRO EXIT_MACRO_MODE;
+
+preproc_evaluate_macro: KW_EVAL_MACRO (
+    SQF_CODE*
+) EXIT_SQF_MODE;
+
+preproc_execute_macro: KW_EXEC_MACRO (
+    SQF_CODE*
+) EXIT_SQF_MODE;
 
 //-------------------------------------------------=DIRECTIVES=---------------------------------------------------------
-
 
 preproc_define_directive: KW_DEFINE_DIRECTIVE ABS_IDENTIFIER;
 
@@ -34,8 +50,10 @@ preproc_if_directive: (
 preproc_line_directive:
     KW_LINE_DIRECTIVE ABS_DIGITS BIS_SYM_DOUBLE_QUOTE;
 
-preproc_include_directive:
-    KW_INCLUDE_DIRECTIVE ABS_INCLUDE_PATH;
+preproc_include_directive[boolean isParamFile]: KW_INCLUDE_DIRECTIVE (
+    ABS_INCLUDE_PATH ||
+    ABS_PARAM_INCLUDE_PATH { isParamFile = true; }
+);
 
 
 

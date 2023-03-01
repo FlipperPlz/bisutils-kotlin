@@ -23,29 +23,11 @@ SYM_COMMA:             BIS_SYM_COMMA;
 SYM_DOUBLE_QUOTE:      BIS_SYM_DOUBLE_QUOTE;
 SYM_ASPERAND:          BIS_SYM_ASPERAND;
 
-ABS_IDENTIFIER: [a-zA-Z_] [a-zA-Z_0-9]*;
+ABS_IDENTIFIER:        BIS_ABS_IDENTIFIER;
 
-ABS_STRING: '"'( ('""'|~('"'))*)'"';
-ABS_NUMBER: ALL_SIMPLE_NUMERIC | SCIENTIFIC_NUMBER;
+ABS_STRING:            BIS_ABS_PARAM_STRING;
+ABS_NUMBER:            BIS_ANY_NUMBER;
 
-fragment GENERIC_NUMBER: ('-')? [0-9]+;
-fragment DECIMAL_NUMBER:  GENERIC_NUMBER '.' [0-9]+;
-fragment SCIENTIFIC_NUMBER: ALL_SIMPLE_NUMERIC ('e'|'E') ('+'|'-') ALL_SIMPLE_NUMERIC;
-fragment ALL_SIMPLE_NUMERIC: DECIMAL_NUMBER | GENERIC_NUMBER;
-
-//-------------------------------------------------=MACRO MODE=---------------------------------------------------------
-
-mode MACRO_MODE;
-
-    KW_EVALUATE: 'EVAL('                                                          -> mode(EVALUATION_MODE);
-    KW_EXECUTE:  'EXEC('                                                          -> mode(EVALUATION_MODE);
-//-----------------------------------------------=EVALUATION MODE=------------------------------------------------------
-
-mode EVALUATION_MODE;
-
-
-
-    EXIT_EVALUATION_MODE: SYM_RIGHT_PARENTHESIS                                   -> mode(DEFAULT_MODE);
 
 
 

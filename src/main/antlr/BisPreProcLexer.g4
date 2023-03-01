@@ -4,10 +4,14 @@ import BisCommonLexer;
 
 ENTER_DIRECTIVE_MODE:           BIS_NEWLINE OCTOTHORPE            -> mode(DIRECTIVE_MODE);
 ENTER_MACRO_MODE:               LINE                              -> mode(MACRO_MODE);
+ENTER_PARENTHESIS_MODE:         BIS_SYM_LEFT_PARENTHESIS       -> pushMode(PARENTHISIS_MODE);
+EXIT_PARENTHESIS_MODE:          BIS_SYM_RIGHT_PARENTHESIS      -> popMode;
 
 DELIMITED_COMMENT:              '/*' .*? '*/'                     -> channel(HIDDEN);
 SINGLE_LINE_COMMENT:            LINE ~[\r\n]*                     -> channel(HIDDEN);
 EMPTY_DELIMITED_COMMENT:        '/*/'                             -> skip;
+
+
 
 fragment LINE:                  '__';
 fragment OCTOTHORPE:            '#';
@@ -34,17 +38,32 @@ mode DIRECTIVE_MODE;
 
     ABS_IDENTIFIER:                 BIS_ABS_IDENTIFIER;
     ABS_DIGITS:                     BIS_DIGITS;
-    ABS_INCLUDE_PATH:               BIS_SYM_DOUBLE_QUOTE .*? BIS_SYM_DOUBLE_QUOTE |
-                                    BIS_SYM_LESS_THAN .*? BIS_SYM_GREATER_THAN;
 
 
-//    NEWLINE:                        '\\' BIS_NEWLINE              -> channel(HIDDEN);
+    ABS_PARAM_INCLUDE_PATH:         BIS_SYM_LESS_THAN BIS_PARAM_STRING_CONTENT* BIS_SYM_GREATER_THAN;
+
+    ABS_INCLUDE_PATH:               BIS_ABS_PARAM_STRING;
 
     EXIT_DIRECTIVE_MODE:            BIS_NEWLINE                   -> mode(DEFAULT_MODE);
+
+
 //-------------------------------------------------=MACRO MODE=---------------------------------------------------------
 mode MACRO_MODE;
 
     KW_LINE_MACRO:                  'LINE';
     KW_FILE_MACRO:                  'FILE';
+    KW_EXEC_MACRO:                  'EXEC('                        -> mode(SQF_MODE);
+    KW_EVAL_MACRO:                  'EVAL('                        -> mode(SQF_MODE);
+
 
     EXIT_MACRO_MODE:                LINE                           -> mode(DEFAULT_MODE);
+//--------------------------------------------------=SQF MODE=----------------------------------------------------------
+mode SQF_MODE;
+    SQF_CODE:                       ( ~('(') | ENTER_PARENTHESIS_MODE)+;
+
+    EXIT_SQF_MODE:                  BIS_SYM_RIGHT_PARENTHESIS      -> mode(DEFAULT_MODE);
+
+//---------------------------------------------=PARENTHESIS MODE=-------------------------------------------------------
+mode PARENTHISIS_MODE;
+
+    PAREN_CONTENTS: ~(')')+;
