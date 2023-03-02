@@ -1,4 +1,4 @@
-package com.flipperplz.bisutils.preproc.directives
+package com.flipperplz.bisutils.language.preprocessor.directives
 
 data class BisIncludeDirective(
     val includePath: String,
@@ -9,6 +9,6 @@ data class BisIncludeDirective(
     ) : this(
         parsedPath.substring(1, parsedPath.length - 1),
         parsedPath.startsWith('<')
-    );
+    )
 
 }
