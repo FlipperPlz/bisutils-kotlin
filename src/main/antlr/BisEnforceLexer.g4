@@ -8,7 +8,6 @@ KW_ENUM:               BIS_KW_ENUM;
 KW_CLASS:              BIS_KW_CLASS;
 KW_DELETE:             BIS_KW_DELETE;
 KW_EXTENDS:            'extends';
-KW_CONST:              'const';
 KW_BREAK:              'break';
 KW_CASE:               'case';
 KW_ELSE:               BIS_KW_ELSE;
@@ -27,6 +26,7 @@ KW_SUPER:              'super';
 KW_GOTO:               'goto';
 KW_POINTER:            'pointer';
 KW_DEFAULT:            'default';
+KW_TYPEDEF:            'typedef';
 
 
 //PSUDO-KEYWORDS
@@ -49,8 +49,9 @@ KW_PRIVATE_MODIFIER:   'private';
 KW_PROTECTED_MODIFIER: 'protected';
 KW_EVENT_MODIFIER:     'event';
 KW_MODDED_MODIFIER:    'modded';
-KE_EXTERNAL_MODIFIER:  'extenal';
+KW_EXTERNAL_MODIFIER:  'external';
 KW_OVERRIDE_MODIFIER:  'override';
+KW_CONST_MODIFIER:     'const';
 KW_LOCAL_MODIFIER:     'local';
 
 
