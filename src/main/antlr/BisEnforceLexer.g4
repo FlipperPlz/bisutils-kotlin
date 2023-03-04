@@ -23,10 +23,13 @@ KW_WHILE:              'while';
 KW_AUTO:               'auto';
 KW_NULL:               'null';
 KW_SUPER:              'super';
+KW_SWITCH:             'switch';
 KW_GOTO:               'goto';
 KW_POINTER:            'pointer';
 KW_DEFAULT:            'default';
 KW_TYPEDEF:            'typedef';
+KW_TRUE:               'true';
+KW_FALSE:              'false';
 
 
 //PSUDO-KEYWORDS
@@ -75,6 +78,8 @@ OP_XOR_ASSIGN:         '^=';
 OP_LESS_EQUAL:         '<=';
 OP_MORE_EQUAL:         '>=';
 OP_BITWISE_OR:         '|';
+OP_BITWISE_XOR:        '^';
+
 OP_BITWISE_AND:        '&';
 OP_BITWISE_NOT:        SYM_TILDE;
 OP_LOGICAL_OR:         '||';
