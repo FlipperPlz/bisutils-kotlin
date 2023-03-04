@@ -22,6 +22,7 @@ public BisEnforceParser(TokenStream input, boolean isDayZ, List<String> classDic
     this(input);
     this.parsedClassNames.addAll(classDictionary);
     this.parsedEnumNames.addAll(enumDictionary);
+    this.setErrorHandler(new BailErrorStrategy());
     this.isDayZ = isDayZ;
 }
 
@@ -66,19 +67,17 @@ private void enterEnum(Enforce_enumDeclarationContext enun) {
 private void exitEnum() { this.currentEnumName = null; }
 }
 
-
 @init {
 this.isDayZ = true;
+this.setErrorHandler(new BailErrorStrategy());
 }
 
 enforce_tree:
     (enforce_topLevelStatement)* EOF;
 
-
-
 enforce_topLevelStatement:
     enforce_containerDeclaration |
-    enforce_typeDefStatement |
+    enforce_typeDefStatement SYM_SEMICOLON|
     enforce_classMember[false] |
     SYM_SEMICOLON;
 
@@ -103,7 +102,7 @@ enforce_enumMember:
 
 enforce_classDeclaration[Enforce_containerModifierContext modifier]: KW_CLASS className=ABS_IDENTIFIER {
 this.enterClass(((Enforce_classDeclarationContext)_localctx));
-    } (OP_LESS enforce_variableAtom (SYM_COMMA enforce_variableAtom)* OP_MORE)? enforce_containerInheritance? SYM_LEFT_BRACE
+    } (OP_LESS enforce_variableAtom  OP_MORE)? enforce_containerInheritance? SYM_LEFT_BRACE
        (enforce_classMember[true]*)
     SYM_RIGHT_BRACE {
 this.exitClass();
@@ -116,9 +115,9 @@ enforce_classMember[boolean allowConstructors]:
 enforce_variableDeclaration[boolean allowVariableModifiers]:
     ({$allowVariableModifiers == true}? enforce_variableModifier)*
     enforce_variableAtom
-    (OP_ASSIGN enforce_expression)?;
+    (OP_ASSIGN enforce_expression)? (SYM_COMMA enforce_variableAtom (OP_ASSIGN enforce_expression))*;
 
-enforce_variableAtom: variableType=enforce_type variableName=ABS_IDENTIFIER;
+enforce_variableAtom: variableType=enforce_type variableName=ABS_IDENTIFIER (SYM_LEFT_BRACKET enforce_expression? SYM_RIGHT_BRACKET)? ;
 
 enforce_anyFunction[boolean allowConstructors]: enforce_functionModifier*
 {
@@ -190,18 +189,18 @@ enforce_scopeEscape_statement: KW_BREAK | KW_CONTINUE | enforce_return_statement
 
 enforce_statement:
     SYM_SEMICOLON                            |
-    enforce_scopeEscape_statement            |
+    enforce_scopeEscape_statement SYM_SEMICOLON           |
     enforce_thread_statement                 |
     enforce_if_statement                     |
     enforce_block_statement                  |
     enforce_switch_statement                 |
-    enforce_delete_statement                 |
+    enforce_delete_statement SYM_SEMICOLON   |
     enforce_for_statement                    |
     enforce_for_each_statement               |
     enforce_while_statement                  |
     enforce_expressionary_statement          |
-    enforce_goto_statement                   |
-    enforce_variableDeclaration[true];
+    enforce_goto_statement SYM_SEMICOLON     |
+    enforce_variableDeclaration[true] SYM_SEMICOLON;
 
 
 enforce_switch_statement: KW_SWITCH enforce_parenthesizedExpression SYM_LEFT_BRACE
@@ -211,7 +210,7 @@ enforce_switch_statement: KW_SWITCH enforce_parenthesizedExpression SYM_LEFT_BRA
 switchLabel:(
     KW_CASE enforce_expression  |
     KW_DEFAULT
-) SYM_COLON;
+) SYM_COLON enforce_block_statement*;
 
 enforce_thread_statement: KW_THREAD functionName=ABS_IDENTIFIER;
 
@@ -225,10 +224,10 @@ enforce_return_statement[boolean returnObject]:
 
 enforce_for_each_statement: KW_FOREACH SYM_LEFT_PARENTHESIS
     enforce_variableDeclaration[true] (SYM_COMMA enforce_variableDeclaration[true])*
-    SYM_COLON enforce_expression enforce_statement;
+    SYM_COLON enforce_expression SYM_RIGHT_PARENTHESIS  enforce_statement;
 
 enforce_for_statement: KW_FOR SYM_LEFT_PARENTHESIS
-    enforce_statement SYM_SEMICOLON enforce_expression SYM_SEMICOLON enforce_statement
+    enforce_statement enforce_expressionary_statement enforce_statement
     SYM_RIGHT_PARENTHESIS enforce_statement;
 
 enforce_delete_statement: KW_DELETE variableName=ABS_IDENTIFIER;
@@ -257,7 +256,9 @@ enforce_expression:
     <assoc=right> operator=OP_DECREMENT enforce_expression                               #preDecrementationExpression  |
     <assoc=right> OP_NEGATE enforce_expression                                           #negatedExpression            |
     <assoc=right> OP_BITWISE_NOT enforce_expression                                      #bitwiseNotExpression         |
-    <assoc=right> KW_NEW (enforce_functionCall | enforce_type)                           #objectCreationExpression     |
+    <assoc=right> KW_NEW ABS_IDENTIFIER enforce_templateArguments? (SYM_LEFT_PARENTHESIS(
+           enforce_functionCallParameter (SYM_COMMA enforce_functionCallParameter)*
+     )? SYM_RIGHT_PARENTHESIS)?                                                          #objectCreationExpression     |
     <assoc=left> enforce_expression OP_MULTIPLY enforce_expression                       #multiplyExpression           |
     <assoc=left> enforce_expression OP_DIVIDE enforce_expression                         #divideExpression             |
     <assoc=left> enforce_expression OP_MODULO enforce_expression                         #modulusExpression            |
@@ -346,9 +347,11 @@ enforce_functionModifier:
     KW_EVENT_MODIFIER    ;
 
 enforce_type:
-    ABS_IDENTIFIER enforce_templateArguments? (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?;
+    ABS_IDENTIFIER enforce_templateArguments* (SYM_LEFT_BRACKET enforce_expression? SYM_RIGHT_BRACKET)?;
 
-enforce_templateArguments: OP_LESS (enforce_type (SYM_COMMA enforce_type*)) OP_MORE;
+enforce_modifiedType: enforce_functionParameterModifier* enforce_type;
+
+enforce_templateArguments: OP_LESS (enforce_modifiedType (SYM_COMMA enforce_modifiedType)*) OP_MORE;
 
 enforce_containerModifier:
     ({this.isDayZ == true}? KW_SEALED_MODIFIER) |
