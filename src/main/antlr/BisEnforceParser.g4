@@ -98,9 +98,9 @@ this.exitEnum();
 enforce_enumMember:
     memberName=ABS_IDENTIFIER (OP_ASSIGN memberValu=enforce_expression)?;
 
-enforce_classDeclaration[Enforce_containerModifierContext modifier]: (KW_CLASS className=ABS_IDENTIFIER {
+enforce_classDeclaration[Enforce_containerModifierContext modifier]: KW_CLASS className=ABS_IDENTIFIER {
 this.enterClass(((Enforce_classDeclarationContext)_localctx));
-    }) enforce_containerInheritance? SYM_LEFT_BRACE
+    } (OP_LESS enforce_variableAtom (SYM_COMMA enforce_variableAtom)* OP_MORE)? enforce_containerInheritance? SYM_LEFT_BRACE
         enforce_classMember[true]*
     SYM_RIGHT_BRACE {
 this.exitClass();
@@ -112,16 +112,18 @@ enforce_classMember[boolean allowConstructors]:
 
 enforce_variableDeclaration[boolean allowVariableModifiers, boolean includeSemicolon]:
     ({$allowVariableModifiers == true}? enforce_variableModifier)*
-    variableType=ABS_IDENTIFIER variableName=ABS_IDENTIFIER
+    enforce_variableAtom
     (OP_ASSIGN enforce_expression)?
     ({$includeSemicolon}? SYM_SEMICOLON);
+
+enforce_variableAtom: variableType=enforce_type[true] variableName=ABS_IDENTIFIER;
 
 enforce_anyFunction[boolean allowConstructors]:
     enforce_voidFunction[allowConstructors] |
     enforce_normalFunction;
 
 enforce_normalFunction:
-    enforce_functionModifier* returnType=ABS_IDENTIFIER enforce_functionEnding[true];
+    enforce_functionModifier* returnType=enforce_type[true] enforce_functionEnding[true];
 
 enforce_voidFunction[boolean allowConstructors] returns [boolean isConstruction, boolean isDeconstruction]:
     enforce_functionModifier* PKW_VOID deconstruct=SYM_TILDE? functionName=ABS_IDENTIFIER
@@ -180,7 +182,7 @@ SYM_RIGHT_PARENTHESIS;
 enforce_functionParameter:
     enforce_functionParameterModifier enforce_variableDeclaration[false, false]; //Skip modifiers, no semicolon
 
-enforce_typeDefStatement: KW_TYPEDEF; //TODO
+enforce_typeDefStatement: KW_TYPEDEF enforce_type[true] aliasName=ABS_IDENTIFIER;
 
 enforce_scopeEscape_statement: KW_BREAK | KW_CONTINUE | enforce_return_statement[true] | enforce_return_statement[false];
 
@@ -210,13 +212,12 @@ switchLabel:(
 
 enforce_thread_statement: KW_THREAD functionName=ABS_IDENTIFIER;
 
-enforce_goto_statement: KW_GOTO label=ABS_IDENTIFIER;
+enforce_goto_statement: KW_GOTO labelName=ABS_IDENTIFIER;
 
 enforce_while_statement: KW_WHILE enforce_parenthesizedExpression enforce_statement;
 
 enforce_return_statement[boolean returnObject]:
    KW_RETURN ({$returnObject == true}? enforce_expression);
-
 
 enforce_for_each_statement: KW_FOREACH SYM_LEFT_PARENTHESIS
     enforce_variableDeclaration[true, false] (SYM_COMMA enforce_variableDeclaration[true, false])*
@@ -224,9 +225,9 @@ enforce_for_each_statement: KW_FOREACH SYM_LEFT_PARENTHESIS
 
 enforce_for_statement: KW_FOR SYM_LEFT_PARENTHESIS
     enforce_statement SYM_SEMICOLON enforce_expression SYM_SEMICOLON enforce_statement
-SYM_RIGHT_PARENTHESIS enforce_statement;
+    SYM_RIGHT_PARENTHESIS enforce_statement;
 
-enforce_delete_statement: KW_DELETE ABS_IDENTIFIER;
+enforce_delete_statement: KW_DELETE variableName=ABS_IDENTIFIER;
 
 enforce_if_statement: KW_IF enforce_parenthesizedExpression enforce_statement enforce_else_statement?;
 
@@ -236,7 +237,7 @@ enforce_expressionary_statement: enforce_expression SYM_SEMICOLON;
 
 enforce_block_statement: SYM_LEFT_BRACE enforce_statement* SYM_RIGHT_BRACE;
 
-enforce_containerInheritance: ((KW_EXTENDS | SYM_COLON) ABS_IDENTIFIER);
+enforce_containerInheritance: ((KW_EXTENDS | SYM_COLON) superClassType=ABS_IDENTIFIER);
 
 enforce_parenthesizedExpression: SYM_LEFT_PARENTHESIS enforce_expression SYM_RIGHT_PARENTHESIS;
 
@@ -288,7 +289,7 @@ enforce_unionable: enforce_functionCall | ABS_IDENTIFIER;
 
 enforce_commonExpression:
     enforce_literal |
-    ABS_IDENTIFIER;
+    enforce_type[false];
 
 enforce_literal:
     ABS_NUMBER |
@@ -336,6 +337,9 @@ enforce_functionModifier:
     KW_NATIVE_MODIFIER   |
     KW_VOLATILE_MODIFIER |
     KW_EVENT_MODIFIER    ;
+
+enforce_type[boolean allowStaticArray]:
+    ABS_IDENTIFIER (OP_LESS enforce_type[false] (SYM_COMMA enforce_type[false])* OP_MORE)? ({$allowStaticArray}? (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?);
 
 enforce_containerModifier:
     ({this.isDayZ == true}? KW_SEALED_MODIFIER) |
