@@ -1,8 +1,19 @@
 lexer grammar BisEnforceLexer;
 
-import BisPreProcLexer;
+import BisCommonLexer;
 
-WHITESPACES:          ( BIS_NEWLINE | BIS_WHITESPACE )                            -> channel(HIDDEN);
+WHITESPACES:          ( NEW_LINE | BIS_WHITESPACE )               -> channel(HIDDEN);
+NEW_LINE:              BIS_NEWLINE;
+
+DELIMITED_COMMENT:              '/*' .*? '*/'                     -> channel(HIDDEN);
+SINGLE_LINE_COMMENT:            '//' ~[\r\n]*                     -> channel(HIDDEN);
+KW_IFDEF:                       '#ifdef' ~[\r\n]*                 -> channel(HIDDEN);
+KW_IFNDEF:                      '#ifndef' ~[\r\n]*                -> channel(HIDDEN);
+KW_ELSE_DIRECTIVE:              '#else' ~[\r\n]*                  -> channel(HIDDEN);
+KW_ENDIF:                       '#endif' ~[\r\n]*                 -> channel(HIDDEN);
+KW_DEFINE:                      '#define' ~[\r\n]*                -> channel(HIDDEN);
+KW_INCLUDE:                     '#include' ~[\r\n]*               -> channel(HIDDEN);
+EMPTY_DELIMITED_COMMENT:        '/*/'                             -> skip;
 
 KW_ENUM:               BIS_KW_ENUM;
 KW_CLASS:              BIS_KW_CLASS;
@@ -10,8 +21,8 @@ KW_DELETE:             BIS_KW_DELETE;
 KW_EXTENDS:            'extends';
 KW_BREAK:              'break';
 KW_CASE:               'case';
-KW_ELSE:               BIS_KW_ELSE;
-KW_IF:                 BIS_KW_IF;
+KW_ELSE:                BIS_KW_ELSE;
+KW_IF:                  BIS_KW_IF;
 KW_FOR:                'for';
 KW_CONTINUE:           'continue';
 KW_FOREACH:            'foreach';
@@ -21,7 +32,7 @@ KW_THIS:               'this';
 KW_THREAD:             'thread';
 KW_WHILE:              'while';
 KW_AUTO:               'auto';
-KW_NULL:               'null';
+KW_NULL:               'null' | 'NULL';
 KW_SUPER:              'super';
 KW_SWITCH:             'switch';
 KW_GOTO:               'goto';
@@ -81,7 +92,7 @@ OP_BITWISE_OR:         '|';
 OP_BITWISE_XOR:        '^';
 
 OP_BITWISE_AND:        '&';
-OP_BITWISE_NOT:        SYM_TILDE;
+OP_BITWISE_NOT:        '~';
 OP_LOGICAL_OR:         '||';
 OP_LOGICAL_AND:        '&&';
 OP_ASSIGN:             BIS_OP_ASSIGN;
@@ -94,7 +105,6 @@ OP_NOT_EQUAL:          '!=';
 OP_LSHIFT:             '<<';
 OP_RSHIFT:             '>>';
 
-SYM_TILDE:             '~';
 SYM_LEFT_BRACKET:      BIS_SYM_LEFT_BRACKET;
 SYM_RIGHT_BRACKET:     BIS_SYM_RIGHT_BRACKET;
 SYM_LEFT_BRACE:        BIS_SYM_LEFT_BRACE;
@@ -107,6 +117,7 @@ SYM_COMMA:             BIS_SYM_COMMA;
 SYM_DOT:               BIS_SYM_PERIOD;
 SYM_DOUBLE_QUOTE:      BIS_SYM_DOUBLE_QUOTE;
 SYM_ASPERAND:          BIS_SYM_ASPERAND;
+SYM_SHAP:              '#';
 
 ABS_IDENTIFIER:        BIS_ABS_IDENTIFIER;
 ABS_STRING:            SYM_DOUBLE_QUOTE .*? SYM_DOUBLE_QUOTE;

@@ -72,12 +72,14 @@ this.isDayZ = true;
 }
 
 enforce_tree:
-    (enforce_topLevelStatement |
-    enforce_classMember[false])* EOF;
+    (enforce_topLevelStatement)* EOF;
+
+
 
 enforce_topLevelStatement:
     enforce_containerDeclaration |
     enforce_typeDefStatement |
+    enforce_classMember[false] |
     SYM_SEMICOLON;
 
 enforce_containerDeclaration:
@@ -102,7 +104,7 @@ enforce_enumMember:
 enforce_classDeclaration[Enforce_containerModifierContext modifier]: KW_CLASS className=ABS_IDENTIFIER {
 this.enterClass(((Enforce_classDeclarationContext)_localctx));
     } (OP_LESS enforce_variableAtom (SYM_COMMA enforce_variableAtom)* OP_MORE)? enforce_containerInheritance? SYM_LEFT_BRACE
-       enforce_classMember[true]*
+       (enforce_classMember[true]*)
     SYM_RIGHT_BRACE {
 this.exitClass();
     };
@@ -124,11 +126,10 @@ final List<Enforce_functionModifierContext> modifiers = ((Enforce_anyFunctionCon
 }( enforce_normalFunction[{modifiers}] | enforce_voidFunction[allowConstructors, modifiers]);
 
 enforce_normalFunction[List<Enforce_functionModifierContext> modifiers]:
-
     returnType=enforce_type functionName=ABS_IDENTIFIER enforce_functionEnding[true];
 
 enforce_voidFunction[boolean allowConstructors, List<Enforce_functionModifierContext> modifiers] returns [boolean isConstruction, boolean isDeconstruction]:
-    enforce_functionModifier* PKW_VOID deconstruct=SYM_TILDE? functionName=ABS_IDENTIFIER
+    enforce_functionModifier* PKW_VOID deconstruct=OP_BITWISE_NOT? functionName=ABS_IDENTIFIER
         {
 final Enforce_voidFunctionContext currentCtx = ((Enforce_voidFunctionContext)_localctx);
 final String definedFunctionName = currentCtx.functionName.getText().toLowerCase();
@@ -255,7 +256,7 @@ enforce_expression:
     <assoc=right> operator=OP_INCREMENT enforce_expression                               #preIncrementationExpression  |
     <assoc=right> operator=OP_DECREMENT enforce_expression                               #preDecrementationExpression  |
     <assoc=right> OP_NEGATE enforce_expression                                           #negatedExpression            |
-    <assoc=right> SYM_TILDE enforce_expression                                           #bitwiseNotExpression         |
+    <assoc=right> OP_BITWISE_NOT enforce_expression                                      #bitwiseNotExpression         |
     <assoc=right> KW_NEW (enforce_functionCall | enforce_type)                           #objectCreationExpression     |
     <assoc=left> enforce_expression OP_MULTIPLY enforce_expression                       #multiplyExpression           |
     <assoc=left> enforce_expression OP_DIVIDE enforce_expression                         #divideExpression             |
@@ -294,7 +295,8 @@ enforce_commonExpression:
     enforce_literal |
     enforce_type |
     KW_THIS |
-    KW_SUPER;
+    KW_SUPER |
+    KW_NULL;
 
 enforce_literal:
     ABS_NUMBER |
@@ -344,8 +346,9 @@ enforce_functionModifier:
     KW_EVENT_MODIFIER    ;
 
 enforce_type:
-    ABS_IDENTIFIER (OP_LESS (enforce_type (SYM_COMMA enforce_type*)) OP_MORE)?
-    (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?;
+    ABS_IDENTIFIER enforce_templateArguments? (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?;
+
+enforce_templateArguments: OP_LESS (enforce_type (SYM_COMMA enforce_type*)) OP_MORE;
 
 enforce_containerModifier:
     ({this.isDayZ == true}? KW_SEALED_MODIFIER) |

@@ -8,7 +8,7 @@ ENTER_PARENTHESIS_MODE:         BIS_SYM_LEFT_PARENTHESIS       -> pushMode(PAREN
 EXIT_PARENTHESIS_MODE:          BIS_SYM_RIGHT_PARENTHESIS      -> popMode;
 
 DELIMITED_COMMENT:              '/*' .*? '*/'                     -> channel(HIDDEN);
-SINGLE_LINE_COMMENT:            LINE ~[\r\n]*                     -> channel(HIDDEN);
+SINGLE_LINE_COMMENT:            '//' ~[\r\n]*                     -> channel(HIDDEN);
 EMPTY_DELIMITED_COMMENT:        '/*/'                             -> skip;
 
 
