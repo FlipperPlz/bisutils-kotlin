@@ -77,7 +77,8 @@ enforce_tree:
 
 enforce_topLevelStatement:
     enforce_containerDeclaration |
-    enforce_typeDefStatement;
+    enforce_typeDefStatement |
+    SYM_SEMICOLON;
 
 enforce_containerDeclaration:
     enforce_containerModifier? {
@@ -101,41 +102,41 @@ enforce_enumMember:
 enforce_classDeclaration[Enforce_containerModifierContext modifier]: KW_CLASS className=ABS_IDENTIFIER {
 this.enterClass(((Enforce_classDeclarationContext)_localctx));
     } (OP_LESS enforce_variableAtom (SYM_COMMA enforce_variableAtom)* OP_MORE)? enforce_containerInheritance? SYM_LEFT_BRACE
-        enforce_classMember[true]*
+       enforce_classMember[true]*
     SYM_RIGHT_BRACE {
 this.exitClass();
     };
 
 enforce_classMember[boolean allowConstructors]:
     enforce_anyFunction[allowConstructors] |
-    enforce_variableDeclaration[true, true];
+    enforce_variableDeclaration[true] SYM_SEMICOLON;
 
-enforce_variableDeclaration[boolean allowVariableModifiers, boolean includeSemicolon]:
+enforce_variableDeclaration[boolean allowVariableModifiers]:
     ({$allowVariableModifiers == true}? enforce_variableModifier)*
     enforce_variableAtom
-    (OP_ASSIGN enforce_expression)?
-    ({$includeSemicolon}? SYM_SEMICOLON);
+    (OP_ASSIGN enforce_expression)?;
 
-enforce_variableAtom: variableType=enforce_type[true] variableName=ABS_IDENTIFIER;
+enforce_variableAtom: variableType=enforce_type variableName=ABS_IDENTIFIER;
 
-enforce_anyFunction[boolean allowConstructors]:
-    enforce_voidFunction[allowConstructors] |
-    enforce_normalFunction;
+enforce_anyFunction[boolean allowConstructors]: enforce_functionModifier*
+{
+final List<Enforce_functionModifierContext> modifiers = ((Enforce_anyFunctionContext)_localctx).enforce_functionModifier();
+}( enforce_normalFunction[{modifiers}] | enforce_voidFunction[allowConstructors, modifiers]);
 
-enforce_normalFunction:
-    enforce_functionModifier* returnType=enforce_type[true] enforce_functionEnding[true];
+enforce_normalFunction[List<Enforce_functionModifierContext> modifiers]:
 
-enforce_voidFunction[boolean allowConstructors] returns [boolean isConstruction, boolean isDeconstruction]:
+    returnType=enforce_type functionName=ABS_IDENTIFIER enforce_functionEnding[true];
+
+enforce_voidFunction[boolean allowConstructors, List<Enforce_functionModifierContext> modifiers] returns [boolean isConstruction, boolean isDeconstruction]:
     enforce_functionModifier* PKW_VOID deconstruct=SYM_TILDE? functionName=ABS_IDENTIFIER
         {
 final Enforce_voidFunctionContext currentCtx = ((Enforce_voidFunctionContext)_localctx);
 final String definedFunctionName = currentCtx.functionName.getText().toLowerCase();
-final List<Enforce_functionModifierContext> mods = currentCtx.enforce_functionModifier();
 final Token deconstructToken = currentCtx.deconstruct;
 
 if(deconstructToken != null) {
-    if(!mods.isEmpty()) {
-        Enforce_functionModifierContext lastModifier = mods.get(mods.size() - 1);
+    if(!$modifiers.isEmpty()) {
+        Enforce_functionModifierContext lastModifier = $modifiers.get($modifiers.size() - 1);
         this.notifyErrorListeners(
         	lastModifier.start,
         	errorMessageModifiersOnConstruction,
@@ -158,8 +159,8 @@ if(deconstructToken != null) {
     }
 } else if(definedFunctionName != null) {
     if(definedFunctionName == this.currentClassname) {
-        if(!mods.isEmpty()) {
-            Enforce_functionModifierContext lastModifier = mods.get(mods.size() - 1);
+        if(!$modifiers.isEmpty()) {
+            Enforce_functionModifierContext lastModifier = $modifiers.get($modifiers.size() - 1);
             this.notifyErrorListeners(
             	lastModifier.start,
             	errorMessageModifiersOnConstruction,
@@ -180,9 +181,9 @@ enforce_functionParameters: SYM_LEFT_PARENTHESIS
 SYM_RIGHT_PARENTHESIS;
 
 enforce_functionParameter:
-    enforce_functionParameterModifier enforce_variableDeclaration[false, false]; //Skip modifiers, no semicolon
+    enforce_functionParameterModifier* enforce_variableDeclaration[false]; //Skip modifiers, no semicolon
 
-enforce_typeDefStatement: KW_TYPEDEF enforce_type[true] aliasName=ABS_IDENTIFIER;
+enforce_typeDefStatement: KW_TYPEDEF enforce_type aliasName=ABS_IDENTIFIER;
 
 enforce_scopeEscape_statement: KW_BREAK | KW_CONTINUE | enforce_return_statement[true] | enforce_return_statement[false];
 
@@ -199,7 +200,8 @@ enforce_statement:
     enforce_while_statement                  |
     enforce_expressionary_statement          |
     enforce_goto_statement                   |
-    enforce_variableDeclaration[true, false];
+    enforce_variableDeclaration[true];
+
 
 enforce_switch_statement: KW_SWITCH enforce_parenthesizedExpression SYM_LEFT_BRACE
     switchLabel+
@@ -217,10 +219,11 @@ enforce_goto_statement: KW_GOTO labelName=ABS_IDENTIFIER;
 enforce_while_statement: KW_WHILE enforce_parenthesizedExpression enforce_statement;
 
 enforce_return_statement[boolean returnObject]:
-   KW_RETURN ({$returnObject == true}? enforce_expression);
+   KW_RETURN
+   ({$returnObject == true}? enforce_expression);
 
 enforce_for_each_statement: KW_FOREACH SYM_LEFT_PARENTHESIS
-    enforce_variableDeclaration[true, false] (SYM_COMMA enforce_variableDeclaration[true, false])*
+    enforce_variableDeclaration[true] (SYM_COMMA enforce_variableDeclaration[true])*
     SYM_COLON enforce_expression enforce_statement;
 
 enforce_for_statement: KW_FOR SYM_LEFT_PARENTHESIS
@@ -242,6 +245,7 @@ enforce_containerInheritance: ((KW_EXTENDS | SYM_COLON) superClassType=ABS_IDENT
 enforce_parenthesizedExpression: SYM_LEFT_PARENTHESIS enforce_expression SYM_RIGHT_PARENTHESIS;
 
 enforce_expression:
+    <assoc=left> enforce_commonExpression                                                #commonExpression             |
     <assoc=left> enforce_parenthesizedExpression                                         #parenthesizedExpression      |
     <assoc=left> enforce_expression operator=OP_INCREMENT                                #postIncrementationExpression |
     <assoc=left> enforce_expression operator=OP_DECREMENT                                #postDecrementationExpression |
@@ -252,7 +256,7 @@ enforce_expression:
     <assoc=right> operator=OP_DECREMENT enforce_expression                               #preDecrementationExpression  |
     <assoc=right> OP_NEGATE enforce_expression                                           #negatedExpression            |
     <assoc=right> SYM_TILDE enforce_expression                                           #bitwiseNotExpression         |
-    <assoc=right> KW_NEW (enforce_functionCall | ABS_IDENTIFIER)                         #objectCreationExpression     |
+    <assoc=right> KW_NEW (enforce_functionCall | enforce_type)                           #objectCreationExpression     |
     <assoc=left> enforce_expression OP_MULTIPLY enforce_expression                       #multiplyExpression           |
     <assoc=left> enforce_expression OP_DIVIDE enforce_expression                         #divideExpression             |
     <assoc=left> enforce_expression OP_MODULO enforce_expression                         #modulusExpression            |
@@ -280,8 +284,7 @@ enforce_expression:
     <assoc=right> enforce_expression operator=OP_LSHIFT_ASSIGN enforce_expression        #leftShiftAssignExpression    |
     <assoc=right> enforce_expression operator=OP_RSHIFT_ASSIGN enforce_expression        #rightShiftAssignExpression   |
     <assoc=right> enforce_expression operator=OP_AND_ASSIGN enforce_expression           #bitwiseAndAssignExpression   |
-    <assoc=right> enforce_expression operator=OP_OR_ASSIGN enforce_expression            #bitwiseOrAssignExpression    |
-    <assoc=left>  enforce_commonExpression                                               #commonExpression;
+    <assoc=right> enforce_expression operator=OP_OR_ASSIGN enforce_expression            #bitwiseOrAssignExpression    ;
 
 enforce_arrayIndex: ABS_IDENTIFIER SYM_LEFT_BRACKET enforce_expression SYM_RIGHT_BRACKET;
 
@@ -289,7 +292,9 @@ enforce_unionable: enforce_functionCall | ABS_IDENTIFIER;
 
 enforce_commonExpression:
     enforce_literal |
-    enforce_type[false];
+    enforce_type |
+    KW_THIS |
+    KW_SUPER;
 
 enforce_literal:
     ABS_NUMBER |
@@ -301,10 +306,10 @@ enforce_array_literal: SYM_LEFT_BRACE (enforce_expression (SYM_COMMA enforce_exp
 
 enforce_boolean_literal: KW_TRUE | KW_FALSE;
 
-enforce_functionCall: functionName=ABS_IDENTIFIER BIS_SYM_LEFT_PARENTHESIS
+enforce_functionCall: functionName=ABS_IDENTIFIER SYM_LEFT_PARENTHESIS
     (
       enforce_functionCallParameter (SYM_COMMA enforce_functionCallParameter)*
-    )? BIS_SYM_RIGHT_PARENTHESIS;
+    )? SYM_RIGHT_PARENTHESIS;
 
 enforce_functionCallParameter: (parameterName=ABS_IDENTIFIER OP_ASSIGN)? enforce_expression;
 
@@ -338,8 +343,9 @@ enforce_functionModifier:
     KW_VOLATILE_MODIFIER |
     KW_EVENT_MODIFIER    ;
 
-enforce_type[boolean allowStaticArray]:
-    ABS_IDENTIFIER (OP_LESS enforce_type[false] (SYM_COMMA enforce_type[false])* OP_MORE)? ({$allowStaticArray}? (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?);
+enforce_type:
+    ABS_IDENTIFIER (OP_LESS (enforce_type (SYM_COMMA enforce_type*)) OP_MORE)?
+    (SYM_LEFT_BRACKET SYM_RIGHT_BRACKET)?;
 
 enforce_containerModifier:
     ({this.isDayZ == true}? KW_SEALED_MODIFIER) |
